@@ -1,98 +1,127 @@
-const cells = document.querySelectorAll(".cell");
-const statusText = document.querySelector("#statusText");
-const restartBtn = document.querySelector("#restartBtn");
+const resetElement = document.querySelector(".reset");
+const playersTurn = document.querySelector(".playersTurn");
+const divResultElement = document.querySelector(".div-result");
+const containerElement = document.querySelector(".container");
 
-const winConditions =[
+let board = ["", "", "", "", "", "", "", "", ""];
+const winningChances = [
   [0,1,2],
   [3,4,5],
   [6,7,8],
-  [0,3,6],
-  [1,4,7],
-  [2,5,8],
   [0,4,8],
-  [2,4,6]
-];
+  [2,4,6],
+  [0,3,6],
+  [2,5,8],
+  [1,4,7]
+]
 
-let options = ["","","","","","","","",""];
-let currentPlayer = "X";
-let running = false;
+playGame();
 
-initializeGame();
-
-function initializeGame(){
-  cells.forEach(cell => cell.addEventListener("click", cellClicked));
-  restartBtn.addEventListener("click", restartGame);
-  statusText.textContent = `${currentPlayer}'s turn`;
-  running = true;
-}
-function cellClicked(){
-  // cellIndex variable is created to store the index of the cell that is clicked with the help of "this". So that we can know which cell is clicked.
-  const cellIndex = this.getAttribute("cellIndex"); 
-  // cellIndex inside getAttribute function is the id of the current cell that is being clicked. Refer from index.html file. Here local variable named cellIndex stores the value of the index of the cell using getAttribute function.
-
-  //NOW, we will check whether the particular index(cellIndex) within our options array is empty or not. Then only we can update the cell otherwise not :::
-  if(options[cellIndex] != "" || !running){
-    return;
+// player 1's move : X
+function player1(index){
+  if(board[index] !== "O" && board[index] === ""){
+    board[index] = "X";
+    updateBoard();
   }
+  else{
+    alert("Invalid Move");
+  }
+}
 
-  //if not returned, then we will update cell by invoking updateCell() function by passing arguments to it ::
-  updateCell(this, cellIndex);
-  checkWinner(); // we need to keep checking the winner after each update.
+// player 2's move : O
+function player2(index){
+  if(board[index] !== "X" && board[index] === ""){
+    board[index] = "O";
+    updateBoard();
+  }
+  else{
+    alert("Invalid Move");
+  }
+}
 
+// update board everytime a move is played for each cell : 
+function updateBoard(){
+  document.querySelectorAll(".cell").forEach((cell, index) => {
+    cell.innerHTML = board[index];
+  })
 }
-function updateCell(cell, index){
-  options[index] = currentPlayer; // we are just updating the options placeholder so that it does remain empty even after a cell getting clicked.
-  cell.textContent = currentPlayer; // we update innerHTML of the cell with currentPlayer, i.e X;
+
+// Play game : 
+let p2Turn = false;
+function playGame(){
+  document.querySelectorAll(".cell").forEach((cell, index) => {
+    cell.addEventListener('click', () => {
+      
+      if(!p2Turn) {
+        player1(index);
+        checkWinner();
+        p2Turn = true;
+        playersTurn.innerHTML = "Player 2's turn : O";
+      }
+      else{
+        player2(index);
+        checkWinner();
+        p2Turn = false;
+        playersTurn.innerHTML = "Player 1's turn : X";
+      }
+    })
+  })
 }
-function changePlayer(){
-  currentPlayer = (currentPlayer == "X") ? "O" : "X"; //Here, we are update the cell alternatively with "X" and "O". If first chance is of "X" then second chance will be given to "O".
-  statusText.textContent = `${currentPlayer}'s turn`; // updating the status text with whose turn is next to write on the cell.
-}
+
 function checkWinner(){
   let roundWon = false;
+  for(let i = 0; i < winningChances.length; i++){
+    const chance = winningChances[i];
+    const cell1 = board[chance[0]];
+    const cell2 = board[chance[1]];
+    const cell3 = board[chance[2]];
 
-  // NOW, we will iterate over all the winConditions. 
-  for(let i = 0; i < winConditions.length; i++){
-    const condition = winConditions[i];
-    const cellA = options[condition[0]];
-    const cellB = options[condition[1]];
-    const cellC = options[condition[2]];
+    if(cell1 === "" || cell2 === "" || cell3 === "") continue;
 
-    // if any of the cellindex is still empty then we will continue to check for the rest.
-    if(cellA == "" || cellB == "" || cellC == ""){
-      continue;
-    }
-    if(cellA == cellB && cellB == cellC){
+    if(cell1 === cell2 && cell2 === cell3){
       roundWon = true;
       break;
     }
   }
 
-  // if cells match then we will display the currentPlayer as the winner. and will stop the running of the game by making it false.
   if(roundWon){
-    statusText.textContent = `${currentPlayer} wins!`;
-    running = false;
+    divResultElement.innerHTML = `
+      <p class="result">You won !</p>
+      <button class="play-again">Play Again</button>
+    `;
+    containerElement.classList.add("blur");
+
+    playAgain();
   }
-  // and if no spaces left then it's a DRAW : 
-  // we can check that using "includes()" function.
-  else if(!options.includes("")){
-    statusText.textContent = `Draw!`;
-    running = false;
-  }
-  else{ // and if spaces left and no one's wins then we can keep changing player and game continues : 
-    changePlayer();
+  else if(!board.includes("")){
+    divResultElement.innerHTML = `
+      <p class="result">Draw !</p>
+      <button class="play-again">Play Again</button>
+    `;
+    containerElement.classList.add("blur");
+    
+    playAgain();
   }
 }
-function restartGame(){
-  currentPlayer = "X"; // player is set to beginning player.
 
-  //all placeholders are made empty
-  options = ["","","","","","","","",""];
-  statusText.textContent = `${currentPlayer}'s turn`;
+// reset the board : 
+resetElement.addEventListener('click', () => {
+  reset();
+})
 
-  // each cell's text content is changed to empty cells.
-  cells.forEach(cell => cell.textContent = "");
-
-  // it is made true to be able to start the game again if want to.
-  running = true;
+function reset(){
+  playersTurn.innerHTML = "Player 1's turn : X";
+  board = ["", "", "", "", "", "", "", "", ""];
+  updateBoard();
+  p2Turn = false;
 }
+
+// play again :
+function playAgain(){
+  document.querySelector(".play-again").addEventListener('click', () => {
+    divResultElement.innerHTML = ``;
+    containerElement.classList.remove("blur");
+    reset();
+  })
+}
+  
